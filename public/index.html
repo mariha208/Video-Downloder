@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Free online video downloader - Download videos from YouTube, Instagram, Facebook, Twitter, TikTok and LinkedIn">
+    <title>Video Downloader - Download Videos Free</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="background-animation">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">📥</span>
+                <h1>Video Downloader</h1>
+            </div>
+            <p class="tagline">Download videos from YouTube, Instagram, Facebook, Twitter, TikTok & LinkedIn</p>
+        </header>
+
+        <main class="main-content">
+            <div class="download-card">
+                <div class="card-header">
+                    <h2>Paste Video Link</h2>
+                    <p>YouTube • Instagram • Facebook • Twitter • TikTok • LinkedIn</p>
+                </div>
+
+                <form id="downloadForm" class="download-form">
+                    <div class="input-group">
+                        <input type="url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." required
+                            autocomplete="off">
+                        <button type="button" id="pasteBtn" class="paste-btn" title="Paste from clipboard">
+                            📋
+                        </button>
+                    </div>
+
+                    <div id="qualityOptionsContainer" class="quality-options-container" style="display: none;">
+                        <h3 class="options-title">Select Quality</h3>
+                        <div id="qualityButtons" class="quality-buttons">
+                            <!-- Buttons will be added dynamically -->
+                        </div>
+                        <div class="audio-toggle">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="audioOnlyToggle">
+                                <span class="slider"></span>
+                            </label>
+                            <span>Download Audio Only (.mp3)</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="downloadBtn" class="download-btn">
+                        <span class="btn-text" id="btnTextContent">
+                            <span class="btn-icon">⬇️</span>
+                            Download Video
+                        </span>
+                        <span class="btn-loading" style="display: none;">
+                            <span class="spinner"></span>
+                            <span id="loadingText">Downloading...</span>
+                        </span>
+                    </button>
+                </form>
+
+                <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+                <div id="progressContainer" class="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">Processing video...</p>
+                </div>
+            </div>
+
+            <div class="features">
+                <div class="feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <div class="feature-text">
+                        <h3>Fast Downloads</h3>
+                        <p>High-speed video processing</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🎬</span>
+                    <div class="feature-text">
+                        <h3>Best Quality</h3>
+                        <p>Downloads in highest available quality</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📱</span>
+                    <div class="feature-text">
+                        <h3>Works Everywhere</h3>
+                        <p>Mobile & Desktop friendly</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>🔒 No data stored • Free forever • Made with ❤️</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
