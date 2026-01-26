@@ -211,6 +211,11 @@ async function downloadVideo(url, quality) {
         });
 
         if (!response.ok) {
+            // Check if response is HTML (timeout error from Render)
+            const contentType = response.headers.get('Content-Type') || '';
+            if (contentType.includes('text/html')) {
+                throw new Error('Server timeout. The video is too large or taking too long. Try a shorter video or run the app locally.');
+            }
             const errorData = await response.json();
             throw new Error(errorData.error || 'Download failed');
         }

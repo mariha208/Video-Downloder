@@ -447,14 +447,75 @@ body {
 }
 
 /* ====== Responsive ====== */
-/* ====== Responsive removed to maintain desktop UI ======
 @media (max-width: 768px) {
-    ...
+    .container {
+        padding: 1.5rem 1rem;
+    }
+
+    .logo h1 {
+        font-size: 1.5rem;
+    }
+
+    .logo-icon {
+        font-size: 2rem;
+    }
+
+    .download-card {
+        padding: 1.5rem;
+        border-radius: 20px;
+    }
+
+    .card-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .features {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        text-align: left;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .feature-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+
+    .circle-1 {
+        width: 300px;
+        height: 300px;
+    }
+
+    .circle-2 {
+        width: 200px;
+        height: 200px;
+    }
+
+    .circle-3 {
+        width: 150px;
+        height: 150px;
+    }
 }
+
 @media (max-width: 480px) {
-    ...
+    html {
+        font-size: 14px;
+    }
+
+    .input-group input {
+        padding: 0.875rem 3rem 0.875rem 1rem;
+    }
+
+    .download-btn {
+        padding: 0.875rem 1.5rem;
+    }
 }
-*/
 
 /* ====== Dark Mode Scrollbar ====== */
 ::-webkit-scrollbar {
