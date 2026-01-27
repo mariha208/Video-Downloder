@@ -5,6 +5,16 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
+const USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2.1 Safari/605.1.15'
+];
+
+const getRandomUserAgent = () => USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -78,6 +88,9 @@ const getVideoInfo = (url) => {
             '--no-check-certificate',
             '--no-cache-dir',
             '--ffmpeg-location', 'bin',
+            '--user-agent', getRandomUserAgent(),
+            '--ignore-errors',
+            '--extractor-args', 'youtube:player_client=android,ios,mweb;player_skip=web',
             url
         ];
 
@@ -179,6 +192,9 @@ const downloadVideo = (url, outputPath, formatSelection = 'best[ext=mp4]/best/be
             '--no-check-certificate',
             '--no-cache-dir',
             '--ffmpeg-location', 'bin',
+            '--user-agent', getRandomUserAgent(),
+            '--ignore-errors',
+            '--extractor-args', 'youtube:player_client=android,ios,mweb;player_skip=web',
             url
         ];
 
