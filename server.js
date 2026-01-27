@@ -76,9 +76,8 @@ const getVideoInfo = (url) => {
             '--no-warnings',
             '--quiet',
             '--no-check-certificate',
+            '--no-cache-dir',
             '--ffmpeg-location', 'bin',
-            '--user-agent', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
-            '--extractor-args', 'youtube:player_client=mweb',
             url
         ];
 
@@ -169,9 +168,8 @@ const downloadVideo = (url, outputPath, formatSelection = 'best[ext=mp4]/best/be
             '--no-warnings',
             '--quiet',
             '--no-check-certificate',
+            '--no-cache-dir',
             '--ffmpeg-location', 'bin',
-            '--user-agent', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
-            '--extractor-args', 'youtube:player_client=mweb',
             url
         ];
 
