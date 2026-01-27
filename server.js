@@ -81,6 +81,15 @@ const getVideoInfo = (url) => {
             url
         ];
 
+        // Add cookies if available
+        const cookiesPath = path.join(__dirname, 'cookies.txt');
+        if (fs.existsSync(cookiesPath)) {
+            execArgs.splice(execArgs.length - 1, 0, '--cookies', cookiesPath);
+        } else if (process.platform === 'win32') {
+            // Fallback to browser cookies on local dev
+            execArgs.splice(execArgs.length - 1, 0, '--cookies-from-browser', 'chrome');
+        }
+
         let ytdlp;
         if (platform === 'win32') {
             const psScript = `& "${command}" ${execArgs.map(a => `'${a}'`).join(' ')}`;
