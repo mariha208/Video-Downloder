@@ -182,6 +182,15 @@ const downloadVideo = (url, outputPath, formatSelection = 'best[ext=mp4]/best/be
             url
         ];
 
+        // Add cookies if available
+        const cookiesPath = path.join(__dirname, 'cookies.txt');
+        if (fs.existsSync(cookiesPath)) {
+            execArgs.splice(execArgs.length - 1, 0, '--cookies', cookiesPath);
+        } else if (process.platform === 'win32') {
+            // Fallback to browser cookies on local dev
+            execArgs.splice(execArgs.length - 1, 0, '--cookies-from-browser', 'chrome');
+        }
+
         let ytdlp;
         if (platform === 'win32') {
             const psScript = `& "${command}" ${execArgs.map(a => `'${a}'`).join(' ')}`;
@@ -219,13 +228,13 @@ const downloadVideo = (url, outputPath, formatSelection = 'best[ext=mp4]/best/be
                 }
             } else {
                 if (stderr.includes('Private video') || stderr.includes('Sign in')) {
-                    reject(new Error('This video is private or requires login'));
+                    reject(new Error('This video is private or requires login. Please provide a cookies.txt file.'));
                 } else if (stderr.includes('Video unavailable') || stderr.includes('not available')) {
                     reject(new Error('Video is not available or has been removed'));
                 } else if (stderr.includes('copyright')) {
                     reject(new Error('Video cannot be downloaded due to copyright restrictions'));
                 } else if (stderr.includes('age-restricted')) {
-                    reject(new Error('This video is age-restricted and cannot be downloaded'));
+                    reject(new Error('This video is age-restricted. Please provide a cookies.txt file.'));
                 } else if (stderr.includes('Requested format is not available')) {
                     reject(new Error('The selected quality is not available for this video'));
                 } else {
