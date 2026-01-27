@@ -104,15 +104,13 @@ const getVideoInfo = (url) => {
         }
 
         let ytdlp;
+        console.log(`Executing: ${command} ${execArgs.join(' ')}`);
+
         if (platform === 'win32') {
-            const psScript = `& "${command}" ${execArgs.map(a => `'${a}'`).join(' ')}`;
-            ytdlp = spawn('powershell.exe', [
-                '-NoProfile',
-                '-WindowStyle', 'Hidden',
-                '-Command', psScript
-            ], {
+            // Use shell: true on Windows for better argument handling, avoid manual PowerShell wrapping if possible
+            ytdlp = spawn(command, execArgs, {
                 windowsHide: true,
-                shell: false
+                shell: true
             });
         } else {
             ytdlp = spawn(command, execArgs, { windowsHide: true });
@@ -127,9 +125,11 @@ const getVideoInfo = (url) => {
 
         ytdlp.stderr.on('data', (data) => {
             stderr += data.toString();
+            console.error(`yt-dlp stderr: ${data}`);
         });
 
         ytdlp.on('close', (code) => {
+            console.log(`yt-dlp process exited with code ${code}`);
             if (code === 0) {
                 try {
                     const info = JSON.parse(stdout);
@@ -208,15 +208,13 @@ const downloadVideo = (url, outputPath, formatSelection = 'best[ext=mp4]/best/be
         }
 
         let ytdlp;
+        console.log(`Executing Download: ${command} ${execArgs.join(' ')}`);
+
         if (platform === 'win32') {
-            const psScript = `& "${command}" ${execArgs.map(a => `'${a}'`).join(' ')}`;
-            ytdlp = spawn('powershell.exe', [
-                '-NoProfile',
-                '-WindowStyle', 'Hidden',
-                '-Command', psScript
-            ], {
+            // Use shell: true on Windows for better argument handling
+            ytdlp = spawn(command, execArgs, {
                 windowsHide: true,
-                shell: false
+                shell: true
             });
         } else {
             ytdlp = spawn(command, execArgs, { windowsHide: true });
@@ -226,9 +224,11 @@ const downloadVideo = (url, outputPath, formatSelection = 'best[ext=mp4]/best/be
 
         ytdlp.stderr.on('data', (data) => {
             stderr += data.toString();
+            console.error(`yt-dlp download stderr: ${data}`);
         });
 
         ytdlp.on('close', (code) => {
+            console.log(`yt-dlp download process exited with code ${code}`);
             if (code === 0) {
                 // Find the actual file created in temp directory
                 // outputPath might have changed extension if yt-dlp decided mkv was better
