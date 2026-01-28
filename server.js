@@ -103,6 +103,12 @@ const getVideoInfo = (url) => {
             execArgs.splice(execArgs.length - 1, 0, '--cookies-from-browser', 'chrome');
         }
 
+        // Instagram specific optimizations
+        if (url.includes('instagram.com')) {
+            execArgs.splice(execArgs.length - 1, 0, '--add-header', 'Referer:https://www.instagram.com/');
+            execArgs.splice(execArgs.length - 1, 0, '--impersonate', 'chrome');
+        }
+
         let ytdlp;
         console.log(`Executing: ${command} ${execArgs.join(' ')}`);
 
@@ -207,6 +213,12 @@ const downloadVideo = (url, outputPath, formatSelection = 'best[ext=mp4]/best/be
             execArgs.splice(execArgs.length - 1, 0, '--cookies-from-browser', 'chrome');
         }
 
+        // Instagram specific optimizations
+        if (url.includes('instagram.com')) {
+            execArgs.splice(execArgs.length - 1, 0, '--add-header', 'Referer:https://www.instagram.com/');
+            execArgs.splice(execArgs.length - 1, 0, '--impersonate', 'chrome');
+        }
+
         let ytdlp;
         console.log(`Executing Download: ${command} ${execArgs.join(' ')}`);
 
@@ -242,20 +254,18 @@ const downloadVideo = (url, outputPath, formatSelection = 'best[ext=mp4]/best/be
                 } else {
                     resolve(outputPath); // Fallback
                 }
+            } else if (stderr.includes('Private video') || stderr.includes('Sign in') || (url.includes('instagram.com') && (stderr.includes('401') || stderr.includes('403')))) {
+                reject(new Error('Login required. Instagram often blocks anonymous downloads. Please provide a cookies.txt file or use the local app with Chrome open.'));
+            } else if (stderr.includes('Video unavailable') || stderr.includes('not available') || (url.includes('instagram.com') && stderr.includes('404'))) {
+                reject(new Error('Video is not available, private, or has been removed. Instagram links can be tricky!'));
+            } else if (stderr.includes('copyright')) {
+                reject(new Error('Video cannot be downloaded due to copyright restrictions'));
+            } else if (stderr.includes('age-restricted')) {
+                reject(new Error('This video is age-restricted. Please provide a cookies.txt file.'));
+            } else if (stderr.includes('Requested format is not available')) {
+                reject(new Error('The selected quality is not available for this video'));
             } else {
-                if (stderr.includes('Private video') || stderr.includes('Sign in')) {
-                    reject(new Error('This video is private or requires login. Please provide a cookies.txt file.'));
-                } else if (stderr.includes('Video unavailable') || stderr.includes('not available')) {
-                    reject(new Error('Video is not available or has been removed'));
-                } else if (stderr.includes('copyright')) {
-                    reject(new Error('Video cannot be downloaded due to copyright restrictions'));
-                } else if (stderr.includes('age-restricted')) {
-                    reject(new Error('This video is age-restricted. Please provide a cookies.txt file.'));
-                } else if (stderr.includes('Requested format is not available')) {
-                    reject(new Error('The selected quality is not available for this video'));
-                } else {
-                    reject(new Error(stderr || 'Failed to download video'));
-                }
+                reject(new Error(stderr || 'Failed to download video'));
             }
         });
 
