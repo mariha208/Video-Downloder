@@ -25,35 +25,46 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // Create temp directory for downloads
-// Vercel Serverless only allows writing to /tmp
 const tempDir = process.env.VERCEL ? "/tmp" : path.join(__dirname, "temp");
 if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir, { recursive: true });
 }
 
-// ✅ COOKIE FILE PATH - Render aur local dono ke liye
+// ✅ FIXED: Cookie file path for Render
 const getCookiesPath = () => {
-  // Render par Secret Files se cookies load karo
-  if (process.env.NODE_ENV === 'production' && fs.existsSync('/etc/secrets/cookies.txt')) {
-    console.log('✅ Using cookies from: /etc/secrets/cookies.txt');
-    return '/etc/secrets/cookies.txt';
+  // Production environment (Render)
+  if (process.env.NODE_ENV === 'production') {
+    // Render Secret Files are mounted in app's root directory
+    const renderSecretFile = path.join(__dirname, 'cookies.txt');
+    if (fs.existsSync(renderSecretFile)) {
+      console.log('✅ Using cookies from Render Secret Files:', renderSecretFile);
+      return renderSecretFile;
+    }
+
+    // Fallback: check /etc/secrets/ (some platforms use this)
+    const etcSecretsPath = '/etc/secrets/cookies.txt';
+    if (fs.existsSync(etcSecretsPath)) {
+      console.log('✅ Using cookies from:', etcSecretsPath);
+      return etcSecretsPath;
+    }
+
+    console.log('⚠️ No cookies file found in production');
+    return null;
   }
 
-  // Local development ke liye
+  // Local development
   const localCookies = path.join(__dirname, "cookies.txt");
   if (fs.existsSync(localCookies)) {
-    console.log('✅ Using cookies from:', localCookies);
+    console.log('✅ Using local cookies from:', localCookies);
     return localCookies;
   }
 
-  // Fallback - agar cookies file nahi mili
-  console.log('⚠️ No cookies file found');
+  console.log('⚠️ No cookies file found locally');
   return null;
 };
 
 // Determine yt-dlp command based on OS and environment
 const getYtDlpCommand = () => {
-  // Check for local binary in bin directory first (deployed env)
   const platform = process.platform;
   const binaryName = platform === "win32" ? "yt-dlp.exe" : "yt-dlp";
   const localBinary = path.join(__dirname, "bin", binaryName);
@@ -62,7 +73,6 @@ const getYtDlpCommand = () => {
     return localBinary;
   }
 
-  // Fallback to global command
   return "yt-dlp";
 };
 
@@ -127,12 +137,12 @@ const getVideoInfo = (url) => {
       url,
     ];
 
-    // ✅ UPDATED: Cookie file logic
+    // Add cookies if available
     const cookiesPath = getCookiesPath();
     if (cookiesPath) {
       execArgs.splice(execArgs.length - 1, 0, "--cookies", cookiesPath);
+      console.log('🍪 Using cookies for video info request');
     } else if (process.platform === "win32") {
-      // Fallback to browser cookies on local dev (Windows only)
       execArgs.splice(
         execArgs.length - 1,
         0,
@@ -175,7 +185,6 @@ const getVideoInfo = (url) => {
         try {
           const info = JSON.parse(stdout);
 
-          // Filter and simplify formats for the frontend
           const formats = (info.formats || [])
             .filter((f) => f.vcodec !== "none" || f.acodec !== "none")
             .map((f) => ({
@@ -191,7 +200,6 @@ const getVideoInfo = (url) => {
               acodec: f.acodec,
             }));
 
-          // Extract unique resolutions for simpler UI
           const resolutions = [
             ...new Set(
               formats
@@ -253,12 +261,12 @@ const downloadVideo = (
       url,
     ];
 
-    // ✅ UPDATED: Cookie file logic
+    // Add cookies if available
     const cookiesPath = getCookiesPath();
     if (cookiesPath) {
       execArgs.splice(execArgs.length - 1, 0, "--cookies", cookiesPath);
+      console.log('🍪 Using cookies for download');
     } else if (process.platform === "win32") {
-      // Fallback to browser cookies on local dev (Windows only)
       execArgs.splice(
         execArgs.length - 1,
         0,
@@ -293,8 +301,6 @@ const downloadVideo = (
     ytdlp.on("close", (code) => {
       console.log(`yt-dlp download process exited with code ${code}`);
       if (code === 0) {
-        // Find the actual file created in temp directory
-        // outputPath might have changed extension if yt-dlp decided mkv was better
         const dir = path.dirname(outputPath);
         const base = path.basename(outputPath, path.extname(outputPath));
         const files = fs.readdirSync(dir);
@@ -303,7 +309,7 @@ const downloadVideo = (
         if (actualFile) {
           resolve(path.join(dir, actualFile));
         } else {
-          resolve(outputPath); // Fallback
+          resolve(outputPath);
         }
       } else if (
         stderr.includes("Private video") ||
@@ -375,7 +381,6 @@ app.post("/api/info", async (req, res) => {
 app.post("/download", async (req, res) => {
   const { url, quality, format_id } = req.body;
 
-  // Validate request
   if (!url) {
     return res.status(400).json({ error: "Video URL is required" });
   }
@@ -386,7 +391,6 @@ app.post("/download", async (req, res) => {
       .json({ error: "Invalid URL format. Please enter a valid video URL." });
   }
 
-  // Determine format selection string
   let formatSelection = "best[ext=mp4]/best[ext=mkv]/best";
   let fileExt = "mp4";
 
@@ -394,13 +398,11 @@ app.post("/download", async (req, res) => {
     formatSelection = "bestaudio/best";
     fileExt = "mp3";
   } else if (quality) {
-    // e.g. quality = '1080'
     formatSelection = `bestvideo[height<=${quality}][ext=mp4]+bestaudio[ext=m4a]/best[height<=${quality}][ext=mp4]/best[height<=${quality}]/best`;
   } else if (format_id) {
     formatSelection = format_id;
   }
 
-  // Generate unique filename
   const fileId = uuidv4();
   const outputPath = path.join(tempDir, `${fileId}.${fileExt}`);
 
@@ -409,7 +411,6 @@ app.post("/download", async (req, res) => {
       `Starting download for: ${url} (Quality: ${quality || "best"})`,
     );
 
-    // Get video info first for filename
     let videoTitle = "video";
     try {
       const info = await getVideoInfo(url);
@@ -418,26 +419,21 @@ app.post("/download", async (req, res) => {
       console.log("Could not get video title, using default");
     }
 
-    // Download the video
     const actualOutputPath = await downloadVideo(
       url,
       outputPath,
       formatSelection,
     );
 
-    // Check if file exists
     if (!fs.existsSync(actualOutputPath)) {
       throw new Error("Download completed but file not found");
     }
 
-    // Get file stats
     const stats = fs.statSync(actualOutputPath);
     console.log(`Download complete. File size: ${stats.size} bytes`);
 
-    // Final extension might be different
     const finalExt = path.extname(actualOutputPath).substring(1) || fileExt;
 
-    // Set headers for file download
     const contentType =
       quality === "audio"
         ? "audio/mpeg"
@@ -451,12 +447,10 @@ app.post("/download", async (req, res) => {
     );
     res.setHeader("Content-Length", stats.size);
 
-    // Stream file to response
     const fileStream = fs.createReadStream(actualOutputPath);
 
     fileStream.pipe(res);
 
-    // Clean up temp file after streaming
     fileStream.on("close", () => {
       fs.unlink(actualOutputPath, (err) => {
         if (err) console.error("Error deleting temp file:", err);
@@ -474,7 +468,6 @@ app.post("/download", async (req, res) => {
   } catch (error) {
     console.error("Download error:", error.message);
 
-    // Clean up temp file if exists
     if (fs.existsSync(outputPath)) {
       fs.unlinkSync(outputPath);
     }
@@ -490,6 +483,7 @@ app.get("/api/health", (req, res) => {
     status: "ok",
     message: "Video Downloader API is running",
     cookies_loaded: !!cookiesPath,
+    cookies_path: cookiesPath || 'Not found',
     environment: process.env.NODE_ENV || 'development'
   });
 });
@@ -513,8 +507,9 @@ if (require.main === module) {
 ║  Local:   http://localhost:${PORT}                  ║
 ║  Network: http://YOUR_IP:${PORT}                    ║
 ╠══════════════════════════════════════════════════╣
-║  Environment: ${process.env.NODE_ENV || 'development'}                       ║
+║  Environment: ${(process.env.NODE_ENV || 'development').padEnd(35)} ║
 ║  Cookies: ${cookiesPath ? '✅ Loaded' : '❌ Not Found'}                        ║
+║  Path: ${(cookiesPath || 'N/A').substring(0, 40).padEnd(43)} ║
 ╠══════════════════════════════════════════════════╣
 ║  Supported: YouTube, Instagram, Facebook,        ║
 ║             Twitter/X, TikTok, LinkedIn          ║
@@ -522,7 +517,6 @@ if (require.main === module) {
     `);
   });
 
-  // Handle unexpected errors to prevent EADDRINUSE on restarts
   process.on("SIGTERM", () => {
     server.close(() => {
       console.log("Server process terminated");
