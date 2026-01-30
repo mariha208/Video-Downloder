@@ -30,37 +30,50 @@ if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir, { recursive: true });
 }
 
-// ✅ FIXED: Cookie file path for Render
-const getCookiesPath = () => {
-  // Production environment (Render)
-  if (process.env.NODE_ENV === 'production') {
-    // Render Secret Files are mounted in app's root directory
-    const renderSecretFile = path.join(__dirname, 'cookies.txt');
-    if (fs.existsSync(renderSecretFile)) {
-      console.log('✅ Using cookies from Render Secret Files:', renderSecretFile);
-      return renderSecretFile;
+// ✅ FIXED: Cookie file setup with writable location
+let COOKIES_PATH = null;
+
+const setupCookies = () => {
+  try {
+    // Production environment (Render)
+    if (process.env.NODE_ENV === 'production') {
+      // Check for Secret File in app root
+      const secretFile = path.join(__dirname, 'cookies.txt');
+
+      if (fs.existsSync(secretFile)) {
+        // Copy to /tmp (writable location) because Secret Files are read-only
+        const writableCookiePath = '/tmp/cookies.txt';
+        fs.copyFileSync(secretFile, writableCookiePath);
+        console.log('✅ Cookies copied to writable location:', writableCookiePath);
+        COOKIES_PATH = writableCookiePath;
+        return writableCookiePath;
+      }
+
+      console.log('⚠️ No cookies file found in production');
+      return null;
     }
 
-    // Fallback: check /etc/secrets/ (some platforms use this)
-    const etcSecretsPath = '/etc/secrets/cookies.txt';
-    if (fs.existsSync(etcSecretsPath)) {
-      console.log('✅ Using cookies from:', etcSecretsPath);
-      return etcSecretsPath;
+    // Local development
+    const localCookies = path.join(__dirname, "cookies.txt");
+    if (fs.existsSync(localCookies)) {
+      console.log('✅ Using local cookies:', localCookies);
+      COOKIES_PATH = localCookies;
+      return localCookies;
     }
 
-    console.log('⚠️ No cookies file found in production');
+    console.log('⚠️ No cookies file found locally');
+    return null;
+  } catch (error) {
+    console.error('❌ Error setting up cookies:', error.message);
     return null;
   }
+};
 
-  // Local development
-  const localCookies = path.join(__dirname, "cookies.txt");
-  if (fs.existsSync(localCookies)) {
-    console.log('✅ Using local cookies from:', localCookies);
-    return localCookies;
-  }
+// Initialize cookies on startup
+setupCookies();
 
-  console.log('⚠️ No cookies file found locally');
-  return null;
+const getCookiesPath = () => {
+  return COOKIES_PATH;
 };
 
 // Determine yt-dlp command based on OS and environment
@@ -141,7 +154,7 @@ const getVideoInfo = (url) => {
     const cookiesPath = getCookiesPath();
     if (cookiesPath) {
       execArgs.splice(execArgs.length - 1, 0, "--cookies", cookiesPath);
-      console.log('🍪 Using cookies for video info request');
+      console.log('🍪 Using cookies for video info');
     } else if (process.platform === "win32") {
       execArgs.splice(
         execArgs.length - 1,
@@ -508,8 +521,7 @@ if (require.main === module) {
 ║  Network: http://YOUR_IP:${PORT}                    ║
 ╠══════════════════════════════════════════════════╣
 ║  Environment: ${(process.env.NODE_ENV || 'development').padEnd(35)} ║
-║  Cookies: ${cookiesPath ? '✅ Loaded' : '❌ Not Found'}                        ║
-║  Path: ${(cookiesPath || 'N/A').substring(0, 40).padEnd(43)} ║
+║  Cookies: ${cookiesPath ? '✅ Loaded from ' + cookiesPath : '❌ Not Found'}
 ╠══════════════════════════════════════════════════╣
 ║  Supported: YouTube, Instagram, Facebook,        ║
 ║             Twitter/X, TikTok, LinkedIn          ║
