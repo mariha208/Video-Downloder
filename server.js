@@ -31,6 +31,26 @@ if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir, { recursive: true });
 }
 
+// ✅ COOKIE FILE PATH - Render aur local dono ke liye
+const getCookiesPath = () => {
+  // Render par Secret Files se cookies load karo
+  if (process.env.NODE_ENV === 'production' && fs.existsSync('/etc/secrets/cookies.txt')) {
+    console.log('✅ Using cookies from: /etc/secrets/cookies.txt');
+    return '/etc/secrets/cookies.txt';
+  }
+
+  // Local development ke liye
+  const localCookies = path.join(__dirname, "cookies.txt");
+  if (fs.existsSync(localCookies)) {
+    console.log('✅ Using cookies from:', localCookies);
+    return localCookies;
+  }
+
+  // Fallback - agar cookies file nahi mili
+  console.log('⚠️ No cookies file found');
+  return null;
+};
+
 // Determine yt-dlp command based on OS and environment
 const getYtDlpCommand = () => {
   // Check for local binary in bin directory first (deployed env)
@@ -107,12 +127,12 @@ const getVideoInfo = (url) => {
       url,
     ];
 
-    // Add cookies if available
-    const cookiesPath = path.join(__dirname, "cookies.txt");
-    if (fs.existsSync(cookiesPath)) {
+    // ✅ UPDATED: Cookie file logic
+    const cookiesPath = getCookiesPath();
+    if (cookiesPath) {
       execArgs.splice(execArgs.length - 1, 0, "--cookies", cookiesPath);
     } else if (process.platform === "win32") {
-      // Fallback to browser cookies on local dev
+      // Fallback to browser cookies on local dev (Windows only)
       execArgs.splice(
         execArgs.length - 1,
         0,
@@ -233,12 +253,12 @@ const downloadVideo = (
       url,
     ];
 
-    // Add cookies if available
-    const cookiesPath = path.join(__dirname, "cookies.txt");
-    if (fs.existsSync(cookiesPath)) {
+    // ✅ UPDATED: Cookie file logic
+    const cookiesPath = getCookiesPath();
+    if (cookiesPath) {
       execArgs.splice(execArgs.length - 1, 0, "--cookies", cookiesPath);
     } else if (process.platform === "win32") {
-      // Fallback to browser cookies on local dev
+      // Fallback to browser cookies on local dev (Windows only)
       execArgs.splice(
         execArgs.length - 1,
         0,
@@ -446,7 +466,7 @@ app.post("/download", async (req, res) => {
 
     fileStream.on("error", (err) => {
       console.error("Stream error:", err);
-      fs.unlink(outputPath, () => {});
+      fs.unlink(outputPath, () => { });
       if (!res.headersSent) {
         res.status(500).json({ error: "Error streaming video" });
       }
@@ -465,7 +485,13 @@ app.post("/download", async (req, res) => {
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", message: "Video Downloader API is running" });
+  const cookiesPath = getCookiesPath();
+  res.json({
+    status: "ok",
+    message: "Video Downloader API is running",
+    cookies_loaded: !!cookiesPath,
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Serve frontend
@@ -479,12 +505,16 @@ module.exports = app;
 // Start server if running directly
 if (require.main === module) {
   const server = app.listen(PORT, () => {
+    const cookiesPath = getCookiesPath();
     console.log(`
 ╔══════════════════════════════════════════════════╗
 ║     🎬 Video Downloader Server Started! 🎬       ║
 ╠══════════════════════════════════════════════════╣
 ║  Local:   http://localhost:${PORT}                  ║
 ║  Network: http://YOUR_IP:${PORT}                    ║
+╠══════════════════════════════════════════════════╣
+║  Environment: ${process.env.NODE_ENV || 'development'}                       ║
+║  Cookies: ${cookiesPath ? '✅ Loaded' : '❌ Not Found'}                        ║
 ╠══════════════════════════════════════════════════╣
 ║  Supported: YouTube, Instagram, Facebook,        ║
 ║             Twitter/X, TikTok, LinkedIn          ║
