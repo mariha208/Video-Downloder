@@ -30,30 +30,35 @@ if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir, { recursive: true });
 }
 
-// ✅ FIXED: Cookie file setup with writable location
+// ✅ UPDATED: Cookie file setup with multiple fallbacks
 let COOKIES_PATH = null;
 
 const setupCookies = () => {
   try {
-    // Production environment (Render)
+    // Method 1: Environment Variable (RECOMMENDED for Render)
+    if (process.env.COOKIES_CONTENT) {
+      console.log('📝 Creating cookies from environment variable...');
+      const cookiePath = '/tmp/cookies.txt';
+      fs.writeFileSync(cookiePath, process.env.COOKIES_CONTENT, 'utf8');
+      console.log('✅ Cookies created from ENV:', cookiePath);
+      COOKIES_PATH = cookiePath;
+      return cookiePath;
+    }
+
+    // Method 2: Secret File (Render Secret Files)
     if (process.env.NODE_ENV === 'production') {
-      // Check for Secret File in app root
       const secretFile = path.join(__dirname, 'cookies.txt');
 
       if (fs.existsSync(secretFile)) {
-        // Copy to /tmp (writable location) because Secret Files are read-only
         const writableCookiePath = '/tmp/cookies.txt';
         fs.copyFileSync(secretFile, writableCookiePath);
-        console.log('✅ Cookies copied to writable location:', writableCookiePath);
+        console.log('✅ Cookies copied from Secret File to:', writableCookiePath);
         COOKIES_PATH = writableCookiePath;
         return writableCookiePath;
       }
-
-      console.log('⚠️ No cookies file found in production');
-      return null;
     }
 
-    // Local development
+    // Method 3: Local development
     const localCookies = path.join(__dirname, "cookies.txt");
     if (fs.existsSync(localCookies)) {
       console.log('✅ Using local cookies:', localCookies);
@@ -61,7 +66,15 @@ const setupCookies = () => {
       return localCookies;
     }
 
-    console.log('⚠️ No cookies file found locally');
+    // Method 4: Temp directory fallback (where the user might have placed them)
+    const tempCookies = path.join(__dirname, "temp", "cookies.txt");
+    if (fs.existsSync(tempCookies)) {
+      console.log('✅ Using temp directory cookies:', tempCookies);
+      COOKIES_PATH = tempCookies;
+      return tempCookies;
+    }
+
+    console.log('⚠️ No cookies file found - downloads may fail for private/restricted videos');
     return null;
   } catch (error) {
     console.error('❌ Error setting up cookies:', error.message);
@@ -152,16 +165,11 @@ const getVideoInfo = (url) => {
 
     // Add cookies if available
     const cookiesPath = getCookiesPath();
-    if (cookiesPath) {
+    if (cookiesPath && fs.existsSync(cookiesPath)) {
       execArgs.splice(execArgs.length - 1, 0, "--cookies", cookiesPath);
-      console.log('🍪 Using cookies for video info');
-    } else if (process.platform === "win32") {
-      execArgs.splice(
-        execArgs.length - 1,
-        0,
-        "--cookies-from-browser",
-        "chrome",
-      );
+      console.log('🍪 Using cookies for video info:', cookiesPath);
+    } else {
+      console.log('⚠️ No cookies available for this request');
     }
 
     // Instagram specific optimizations
@@ -276,16 +284,11 @@ const downloadVideo = (
 
     // Add cookies if available
     const cookiesPath = getCookiesPath();
-    if (cookiesPath) {
+    if (cookiesPath && fs.existsSync(cookiesPath)) {
       execArgs.splice(execArgs.length - 1, 0, "--cookies", cookiesPath);
-      console.log('🍪 Using cookies for download');
-    } else if (process.platform === "win32") {
-      execArgs.splice(
-        execArgs.length - 1,
-        0,
-        "--cookies-from-browser",
-        "chrome",
-      );
+      console.log('🍪 Using cookies for download:', cookiesPath);
+    } else {
+      console.log('⚠️ No cookies available for download');
     }
 
     // Instagram specific optimizations
@@ -492,12 +495,26 @@ app.post("/download", async (req, res) => {
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   const cookiesPath = getCookiesPath();
+  const cookiesExist = cookiesPath && fs.existsSync(cookiesPath);
+
+  let cookiesPreview = 'Not available';
+  if (cookiesExist) {
+    try {
+      const content = fs.readFileSync(cookiesPath, 'utf8');
+      cookiesPreview = content.substring(0, 100) + '...';
+    } catch (e) {
+      cookiesPreview = 'Error reading file';
+    }
+  }
+
   res.json({
     status: "ok",
     message: "Video Downloader API is running",
-    cookies_loaded: !!cookiesPath,
+    cookies_loaded: cookiesExist,
     cookies_path: cookiesPath || 'Not found',
-    environment: process.env.NODE_ENV || 'development'
+    cookies_preview: cookiesPreview,
+    environment: process.env.NODE_ENV || 'development',
+    has_env_cookies: !!process.env.COOKIES_CONTENT
   });
 });
 
@@ -521,7 +538,8 @@ if (require.main === module) {
 ║  Network: http://YOUR_IP:${PORT}                    ║
 ╠══════════════════════════════════════════════════╣
 ║  Environment: ${(process.env.NODE_ENV || 'development').padEnd(35)} ║
-║  Cookies: ${cookiesPath ? '✅ Loaded from ' + cookiesPath : '❌ Not Found'}
+║  Cookies: ${cookiesPath ? '✅ Loaded' : '❌ Not Found'}                        ║
+${cookiesPath ? `║  Path: ${cookiesPath.padEnd(46)} ║` : ''}
 ╠══════════════════════════════════════════════════╣
 ║  Supported: YouTube, Instagram, Facebook,        ║
 ║             Twitter/X, TikTok, LinkedIn          ║

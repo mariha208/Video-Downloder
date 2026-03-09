@@ -260,7 +260,7 @@ async function downloadVideo(url, quality) {
 
         if (error.message.includes('Failed to fetch')) {
             errorMessage = 'Could not connect to server. Please make sure the server is running.';
-        } else if (error.message.includes('yt-dlp')) {
+        } else if (error.message.includes('ENOENT') && error.message.includes('yt-dlp')) {
             errorMessage = 'Server error: yt-dlp is not installed on the server.';
         }
 
