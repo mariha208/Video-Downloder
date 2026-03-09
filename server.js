@@ -115,9 +115,6 @@ const isValidUrl = (url) => {
 // Check if URL is from supported platforms
 const isSupportedPlatform = (url) => {
   const supportedDomains = [
-    "youtube.com",
-    "youtu.be",
-    "www.youtube.com",
     "instagram.com",
     "www.instagram.com",
     "facebook.com",
@@ -379,6 +376,10 @@ app.post("/api/info", async (req, res) => {
     return res.status(400).json({ error: "URL is required" });
   }
 
+  if (url.includes("youtube.com") || url.includes("youtu.be")) {
+    return res.status(403).json({ error: "YouTube downloads are not supported on this platform." });
+  }
+
   if (!isValidUrl(url)) {
     return res.status(400).json({ error: "Invalid URL format" });
   }
@@ -397,6 +398,10 @@ app.post("/download", async (req, res) => {
 
   if (!url) {
     return res.status(400).json({ error: "Video URL is required" });
+  }
+
+  if (url.includes("youtube.com") || url.includes("youtu.be")) {
+    return res.status(403).json({ error: "YouTube downloads are not supported on this platform." });
   }
 
   if (!isValidUrl(url)) {
@@ -539,7 +544,7 @@ if (require.main === module) {
 ║  Cookies: ${cookiesPath ? '✅ Loaded' : '❌ Not Found'}                        ║
 ${cookiesPath ? `║  Path: ${cookiesPath.padEnd(46)} ║` : ''}
 ╠══════════════════════════════════════════════════╣
-║  Supported: YouTube, Instagram, Facebook,        ║
+║  Supported: Instagram, Facebook,                 ║
 ║             Twitter/X, TikTok, LinkedIn          ║
 ╚══════════════════════════════════════════════════╝
     `);

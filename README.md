@@ -1,12 +1,12 @@
 # 🎬 Video Downloader
 
-A simple, fast, and free web-based video downloader that works on mobile and desktop browsers. Download videos from YouTube, Instagram, Facebook, Twitter, and TikTok.
+A simple, fast, and free web-based video downloader that works on mobile and desktop browsers. Download videos from Instagram, Facebook, Twitter, TikTok and LinkedIn.
 
 ## ✨ Features
 
 - 📱 **Responsive Design** - Works on mobile and desktop
 - ⚡ **Fast Downloads** - Best quality video downloads
-- 🌐 **Multi-Platform Support** - YouTube, Instagram, Facebook, Twitter, TikTok
+- 🌐 **Multi-Platform Support** - Instagram, Facebook, Twitter, TikTok, LinkedIn
 - 🎨 **Modern UI** - Dark theme with beautiful animations
 - 🔒 **Privacy Focused** - No data stored
 
