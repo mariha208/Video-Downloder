@@ -1,0 +1,7 @@
+node_modules/
+temp/
+cookies.txt
+*.mp4
+*.mkv
+*.mp3
+*.part
