@@ -180,7 +180,6 @@ const getVideoInfo = (url) => {
         "--add-header",
         "Referer:https://www.instagram.com/",
       );
-      execArgs.splice(execArgs.length - 1, 0, "--impersonate", "chrome");
     }
 
     let ytdlp;
@@ -299,7 +298,6 @@ const downloadVideo = (
         "--add-header",
         "Referer:https://www.instagram.com/",
       );
-      execArgs.splice(execArgs.length - 1, 0, "--impersonate", "chrome");
     }
 
     let ytdlp;
